@@ -37,6 +37,7 @@ import httpx
 from langchain.tools import tool
 
 from deerflow.community.search_max_results import coerce_max_results
+from deerflow.community.url_safety import screen_public_result_urls
 from deerflow.config import get_app_config
 
 logger = logging.getLogger(__name__)
@@ -178,12 +179,14 @@ def web_search_tool(query: str, max_results: int | None = None) -> str:
     if not results:
         return json.dumps({"error": "No results found", "query": query}, ensure_ascii=False)
 
-    normalized_results = [
-        {
-            "title": r.get("title", ""),
-            "url": r.get("url", ""),
-            "snippet": _snippet(r),
-        }
-        for r in results[:count]
-    ]
+    normalized_results = screen_public_result_urls(
+        [
+            {
+                "title": r.get("title", ""),
+                "url": r.get("url", ""),
+                "snippet": _snippet(r),
+            }
+            for r in results[:count]
+        ]
+    )
     return json.dumps(normalized_results, indent=2, ensure_ascii=False)

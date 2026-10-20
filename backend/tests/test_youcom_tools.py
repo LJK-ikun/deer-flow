@@ -310,7 +310,7 @@ class TestWebSearchTool:
         finally:
             patcher.stop()
 
-        assert parsed[0] == {"title": "", "url": "", "snippet": ""}
+        assert parsed == []
 
     @pytest.mark.parametrize(
         ("status", "hint"),

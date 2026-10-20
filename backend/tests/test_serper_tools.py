@@ -698,7 +698,7 @@ class TestWebSearchTool:
             result = web_search_tool.invoke({"query": "test"})
             parsed = json.loads(result)
 
-        assert parsed["results"][0] == {"title": "", "url": "", "content": ""}
+        assert parsed == {"query": "test", "total_results": 0, "results": []}
 
     def test_malformed_json_response_returns_error(self, mock_config_with_key):
         mock_resp = MagicMock()

@@ -229,15 +229,21 @@ def test_doctor_recognizes_webz_credentials(tmp_path, monkeypatch):
 async def test_malformed_item_preserves_valid_neighbors(webz, bad_item, caplog):
     module, _, _, response, _ = webz
     response["results"] = [
-        {"article": {"title": "First", "summary": "First summary"}},
+        {"article": {"title": "First", "url": "https://example.com/first", "summary": "First summary"}},
         bad_item,
-        {"article": {"title": "Last", "summary": "Last summary"}},
+        {"article": {"title": "Last", "url": "https://example.com/last", "summary": "Last summary"}},
     ]
     result = json.loads(await module.web_search_tool.ainvoke({"query": "news", "max_results": 3}))
     assert result["returned_results"] == 2
     assert [item["title"] for item in result["results"]] == ["First", "Last"]
-    assert "Skipping malformed Webz result at index 1" in caplog.text
+    assert "Skipping" in caplog.text
     assert "synthetic-key" not in caplog.text
+
+
+def test_normalize_drops_unsafe_result_urls():
+    from deerflow.community.webz.tools import _normalize
+
+    assert _normalize({"results": [{"article": {"title": "Private", "url": "http://127.0.0.1/"}}]}, 5) == []
 
 
 @pytest.mark.asyncio

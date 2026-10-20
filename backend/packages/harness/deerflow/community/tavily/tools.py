@@ -5,6 +5,7 @@ from langchain.tools import tool
 from tavily import AsyncTavilyClient
 
 from deerflow.community.search_time_range import SearchTimeRange
+from deerflow.community.url_safety import screen_public_result_urls
 from deerflow.config import get_app_config
 
 logger = logging.getLogger(__name__)
@@ -73,14 +74,16 @@ async def web_search_tool(query: str, time_range: SearchTimeRange | None = None)
     results = _response_objects(res, "results")
     if results is None:
         return json.dumps({"error": _FORMAT_ERROR, "query": query}, ensure_ascii=False)
-    normalized_results = [
-        {
-            "title": result.get("title") or "",
-            "url": result.get("url") or "",
-            "snippet": result.get("content") or "",
-        }
-        for result in results
-    ]
+    normalized_results = screen_public_result_urls(
+        [
+            {
+                "title": result.get("title") or "",
+                "url": result.get("url") or "",
+                "snippet": result.get("content") or "",
+            }
+            for result in results
+        ]
+    )
     json_results = json.dumps(normalized_results, indent=2, ensure_ascii=False)
     return json_results
 

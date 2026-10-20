@@ -9,6 +9,7 @@ from typing import Any
 import httpx
 from langchain.tools import tool
 
+from deerflow.community.url_safety import safe_public_result_url
 from deerflow.config import get_app_config
 
 logger = logging.getLogger(__name__)
@@ -193,6 +194,7 @@ def _parse_results(response: dict[str, Any], *, max_results: int) -> list[dict[s
         return None
 
     results: list[dict[str, Any]] = []
+    usable_pages = 0
     for page in pages:
         if isinstance(page, str):
             try:
@@ -212,13 +214,16 @@ def _parse_results(response: dict[str, Any], *, max_results: int) -> list[dict[s
         if not isinstance(page_data, dict):
             logger.warning("Skipping Tencent Cloud WSA page entry that is not an object")
             continue
+        usable_pages += 1
 
         title = page_data.get("title")
-        url = page_data.get("url")
+        url = safe_public_result_url(page_data.get("url"))
+        if not url:
+            continue
         content = page_data.get("content") or page_data.get("passage") or ""
         result = {
             "title": title if isinstance(title, str) else "",
-            "url": url if isinstance(url, str) else "",
+            "url": url,
             "snippet": content if isinstance(content, str) else "",
         }
         for field in ("date", "site", "score"):
@@ -228,7 +233,7 @@ def _parse_results(response: dict[str, Any], *, max_results: int) -> list[dict[s
         results.append(result)
         if len(results) >= max_results:
             break
-    if pages and not results:
+    if pages and not results and not usable_pages:
         logger.error("Tencent Cloud WSA returned 'Pages' with no usable page objects")
         return None
     return results

@@ -17,6 +17,7 @@ import re
 import httpx
 from langchain.tools import tool
 
+from deerflow.community.url_safety import safe_public_result_url
 from deerflow.config import get_app_config
 
 logger = logging.getLogger(__name__)
@@ -158,12 +159,15 @@ def _serply_get(path: str, api_key: str, query: str, params: dict[str, object]) 
         return None, json.dumps({"error": str(e)[:500], "query": query}, ensure_ascii=False)
 
 
-def _normalize_row(vertical: str, row: dict) -> dict:
+def _normalize_row(vertical: str, row: dict) -> dict | None:
     """Map one Serply row onto the common ``title``/``url``/``content`` shape.
 
     News and Scholar rows carry a few extra fields worth surfacing to the model.
     """
-    result = {"title": row.get("title", ""), "url": row.get("link", "")}
+    url = safe_public_result_url(row.get("link"))
+    if not url:
+        return None
+    result = {"title": row.get("title", ""), "url": url}
     if vertical == "news":
         result["content"] = _clean_text(row.get("summary"))
         result["published"] = row.get("published", "")
@@ -178,7 +182,7 @@ def _normalize_row(vertical: str, row: dict) -> dict:
         citations = extras.get("citations") if isinstance(extras.get("citations"), dict) else {}
         result["cited_by"] = citations.get("count", 0)
         doc = row.get("doc") if isinstance(row.get("doc"), dict) else {}
-        result["pdf_url"] = doc.get("link", "")
+        result["pdf_url"] = safe_public_result_url(doc.get("link"))
     else:
         result["content"] = row.get("description", "")
     return result
@@ -221,7 +225,7 @@ def web_search_tool(query: str, max_results: int = 5) -> str:
         return json.dumps({"error": "No results found", "query": query}, ensure_ascii=False)
 
     # The news feed ignores ``num`` server-side, so the cap is also applied here.
-    normalized_results = [_normalize_row(vertical, row) for row in rows[:max_results]]
+    normalized_results = [normalized for row in rows[:max_results] if (normalized := _normalize_row(vertical, row)) is not None]
 
     output = {
         "query": query,

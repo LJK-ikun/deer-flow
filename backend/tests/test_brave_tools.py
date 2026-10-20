@@ -443,7 +443,7 @@ class TestWebSearchTool:
             result = web_search_tool.invoke({"query": "test"})
             parsed = json.loads(result)
 
-        assert parsed["results"][0] == {"title": "", "url": "", "content": ""}
+        assert parsed == {"error": "No results found", "query": "test"}
 
 
 class TestSafePublicUrl:

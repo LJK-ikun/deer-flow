@@ -24,6 +24,7 @@ from langchain.tools import tool
 from deerflow.community.search_max_results import coerce_max_results
 from deerflow.community.search_time_range import SearchTimeRange
 from deerflow.community.url_safety import safe_public_result_url as _safe_public_url
+from deerflow.community.url_safety import screen_public_result_urls
 from deerflow.config import get_app_config
 
 logger = logging.getLogger(__name__)
@@ -428,17 +429,18 @@ def web_search_tool(query: str, max_results: int = 5, time_range: SearchTimeRang
     if include or exclude:
         organic = [result for result in organic if _matches_domain_scope(result.get("link"), include, exclude)]
 
-    # Search result links are returned verbatim (not passed through
-    # _safe_public_url): they are surfaced as citations for the model to read,
-    # not fetched/downloaded by this tool, unlike image_search image URLs.
-    normalized_results = [
-        {
-            "title": r.get("title", ""),
-            "url": r.get("link", ""),
-            "content": r.get("snippet", ""),
-        }
-        for r in organic[:max_results]
-    ]
+    # Result links are screened before being surfaced as citations; the model
+    # may pass them to a separate fetch tool.
+    normalized_results = screen_public_result_urls(
+        [
+            {
+                "title": r.get("title", ""),
+                "url": r.get("link", ""),
+                "content": r.get("snippet", ""),
+            }
+            for r in organic[:max_results]
+        ]
+    )
 
     output = {
         "query": query,

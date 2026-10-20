@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ipaddress
 import socket
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Mapping
 from urllib.parse import urlparse
 
 _BLOCKED_HOSTNAMES = {"localhost", "metadata.google.internal"}
@@ -48,6 +48,16 @@ def safe_public_result_url(value: object) -> str:
         if embedded is not None and is_blocked_address(embedded):
             return ""
     return "" if is_blocked_address(address) else url
+
+
+def screen_public_result_urls(results: Iterable[Mapping[str, object]]) -> list[dict[str, object]]:
+    """Return copies of search results whose ``url`` is a public HTTP(S) URL."""
+    screened: list[dict[str, object]] = []
+    for result in results:
+        url = safe_public_result_url(result.get("url"))
+        if url:
+            screened.append({**result, "url": url})
+    return screened
 
 
 def _decode_result_ipv4(host: str) -> ipaddress.IPv4Address | None:

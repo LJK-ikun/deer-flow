@@ -150,7 +150,7 @@ class TestTencentWsaSearch:
         assert client.post.call_args.kwargs["json"] == {"Query": "腾讯云"}
 
     def test_search_requests_supported_cnt_for_more_than_default_results(self):
-        pages = [json.dumps({"title": f"结果 {index}", "passage": "摘要"}) for index in range(20)]
+        pages = [json.dumps({"title": f"结果 {index}", "url": f"https://example.com/{index}", "passage": "摘要"}) for index in range(20)]
         http_response = MagicMock()
         http_response.json.return_value = _response(pages)
         client, context_manager = _mock_http_client(http_response)

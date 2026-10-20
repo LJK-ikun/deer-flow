@@ -4,6 +4,7 @@ import logging
 from langchain.tools import tool
 
 from deerflow.community.search_time_range import SearchTimeRange
+from deerflow.community.url_safety import screen_public_result_urls
 from deerflow.config import get_app_config
 
 from .searxng_client import SearxngClient, SearxngResponseError
@@ -74,14 +75,16 @@ async def web_search_tool(query: str, time_range: SearchTimeRange | None = None)
             search_kwargs["time_range"] = time_range
         results = await client.search(query, **search_kwargs)
 
-        normalized = [
-            {
-                "title": r.get("title", ""),
-                "url": r.get("url", ""),
-                "snippet": r.get("content", ""),
-            }
-            for r in results
-        ]
+        normalized = screen_public_result_urls(
+            [
+                {
+                    "title": r.get("title", ""),
+                    "url": r.get("url", ""),
+                    "snippet": r.get("content", ""),
+                }
+                for r in results
+            ]
+        )
         return json.dumps(normalized, indent=2, ensure_ascii=False)
     except SearxngResponseError:
         return _unexpected_format_error(query)

@@ -11,6 +11,7 @@ import httpx
 from langchain.tools import tool
 
 from deerflow.community.search_time_range import SearchTimeRange
+from deerflow.community.url_safety import safe_public_result_url
 from deerflow.config import get_app_config
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ def _normalize(payload: object, count: int) -> list[dict]:
     if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
         raise ValueError("Invalid results")
     results = []
+    valid_articles = 0
     for index, item in enumerate(payload["results"][:count]):
         try:
             if not isinstance(item, dict) or not isinstance(item.get("article"), dict):
@@ -51,11 +53,16 @@ def _normalize(payload: object, count: int) -> list[dict]:
             }
             if any(not isinstance(value, str) for value in result.values()):
                 raise ValueError("Invalid article fields")
+            valid_articles += 1
+            result["url"] = safe_public_result_url(result["url"])
+            if not result["url"]:
+                logger.warning("Skipping Webz result with an unsafe or missing URL at index %d", index)
+                continue
         except ValueError:
             logger.warning("Skipping malformed Webz result at index %d", index)
             continue
         results.append({**result, "source": metadata})
-    if payload["results"] and not results:
+    if payload["results"] and not results and not valid_articles:
         raise ValueError("No valid articles")
     return results
 

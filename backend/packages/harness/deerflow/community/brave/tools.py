@@ -19,6 +19,7 @@ from langchain.tools import tool
 
 from deerflow.community.search_time_range import BRAVE_FRESHNESS_BY_TIME_RANGE, SearchTimeRange
 from deerflow.community.url_safety import safe_public_result_url as _safe_public_url
+from deerflow.community.url_safety import screen_public_result_urls
 from deerflow.config import get_app_config
 
 logger = logging.getLogger(__name__)
@@ -170,18 +171,23 @@ def web_search_tool(query: str, max_results: int = 5, time_range: SearchTimeRang
     if not web_results:
         return json.dumps({"error": "No results found", "query": query}, ensure_ascii=False)
 
-    normalized_results = [
-        {
-            "title": r.get("title", ""),
-            "url": r.get("url", ""),
-            "content": r.get("description", ""),
-        }
-        for r in web_results
-        if isinstance(r, dict)
-    ]
-    if not normalized_results:
+    usable_results = [r for r in web_results if isinstance(r, dict)]
+    if not usable_results:
         logger.error("Brave Search returned 'web.results' with no usable result objects")
         return _unexpected_format_error(query)
+
+    normalized_results = screen_public_result_urls(
+        [
+            {
+                "title": r.get("title", ""),
+                "url": r.get("url", ""),
+                "content": r.get("description", ""),
+            }
+            for r in usable_results
+        ]
+    )
+    if not normalized_results:
+        return json.dumps({"error": "No results found", "query": query}, ensure_ascii=False)
 
     output = {
         "query": query,

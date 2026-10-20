@@ -32,7 +32,7 @@ def search(monkeypatch):
 @pytest.mark.parametrize("config", [{}, {"include_domains": [], "exclude_domains": []}])
 def test_empty_preserves_behavior(search, config):
     result = search(config, ["not a URL"], query=" news ")
-    assert result["results"][0]["url"] == "not a URL"
+    assert result == {"query": "news", "total_results": 0, "results": []}
     assert search.post.call_args.kwargs["json"] == {"q": "news", "num": 5}
 
 

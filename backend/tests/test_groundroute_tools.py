@@ -270,7 +270,7 @@ class TestWebSearchTool:
         finally:
             patcher.stop()
 
-        assert parsed[0] == {"title": "", "url": "", "snippet": "", "source_engine": ""}
+        assert parsed == []
 
 
 class TestWebFetchTool:

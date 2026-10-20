@@ -1265,6 +1265,11 @@ This release closes that milestone with **621 merged pull requests**.
 
 ### Fixed
 
+- **search:** Community search and news providers now remove non-public or
+  malformed result URLs before returning citations to the model. A single
+  screened URL helper covers web results from every bundled provider, while
+  image result screening continues to use the same policy. ([#7052])
+
 - **skills:** `GET /api/skills/custom/{skill_name}/history` now answers an
   invalid skill name (not hyphen-case, or longer than 64 characters) with `400`,
   as delete and rollback already do, instead of `500` with a logged traceback on

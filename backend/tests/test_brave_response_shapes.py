@@ -75,12 +75,8 @@ def test_mixed_entries_preserve_valid_results_in_order(invoke_search):
     result = invoke_search({"web": {"results": [None, {"title": "文档", "url": "https://example.com/one", "description": "概述"}, "invalid", {}, [], {"title": "Second"}]}})
     assert result == {
         "query": "文档 search",
-        "total_results": 3,
-        "results": [
-            {"title": "文档", "url": "https://example.com/one", "content": "概述"},
-            {"title": "", "url": "", "content": ""},
-            {"title": "Second", "url": "", "content": ""},
-        ],
+        "total_results": 1,
+        "results": [{"title": "文档", "url": "https://example.com/one", "content": "概述"}],
     }
 
 
@@ -93,8 +89,8 @@ def test_missing_or_empty_results_keep_no_results_response(invoke_search, payloa
 def test_valid_results_keep_existing_normalization(invoke_search):
     assert invoke_search({"web": {"results": [{"title": "Title", "url": "https://example.com", "description": "Snippet"}, {}]}}) == {
         "query": "文档 search",
-        "total_results": 2,
-        "results": [{"title": "Title", "url": "https://example.com", "content": "Snippet"}, {"title": "", "url": "", "content": ""}],
+        "total_results": 1,
+        "results": [{"title": "Title", "url": "https://example.com", "content": "Snippet"}],
     }
 
 
